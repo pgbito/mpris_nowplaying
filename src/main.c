@@ -2,7 +2,6 @@
     fprintf(stdout, "%s\n", output);
 } */
 #include <unistd.h>
-
 #include <getopt.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -11,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-
 #include "sstring.h"
 #include "sdbus.h"
 #define POLL_ALL_PLAYERS 0
@@ -27,9 +25,7 @@
 #define CMD_INFO "info"
 #define ARG_PLAYER "--player"
 #define CMD_LFMINFO "lastfm"
-
-#define INFO_DEFAULT_STATUS "%track_name - %album_name - %artist_name"
-#define INFO_FULL_STATUS "{\"Player name\": \"" INFO_PLAYER_NAME "\",\n"   \
+#define JSON_FULL_STATUS "{\"Player name\": \"" INFO_PLAYER_NAME "\",\n"   \
                          "\"Play status\":\"" INFO_PLAYBACK_STATUS "\",\n" \
                          "\"Track\":\"" INFO_TRACK_NAME "\",\n"            \
                          "\"Artist\":\"" INFO_ARTIST_NAME "\",\n"          \
@@ -117,7 +113,7 @@ const char *get_version()
 }
 
 const char *get_dbus_property_name(char *command)
-{
+{    
     if (NULL == command)
         return NULL;
     if (strcmp(command, CMD_LFMINFO) == 0)
@@ -139,10 +135,7 @@ const char *get_dbus_property_name(char *command)
 
     return NULL;
 }
-void cnlog(char *msg)
-{ 
-    fprintf(stdout, "%s\n\r", msg);
-}
+
 const char *get_dbus_method(char *command)
 
 {
@@ -188,14 +181,14 @@ void print_help(char *name)
     const char *version = get_version();
 
     help_msg = HELP_MESSAGE;
-    char *info_def = INFO_DEFAULT_STATUS;
+    char *info_def = "%track_name - %album_name - %artist_name";
 
     fprintf(stdout, help_msg, version, name, info_def);
 }
 
 char *print_mpris_info_as_json(mpris_properties *props, const char *format)
 {
-    const char *info_full = INFO_FULL_STATUS;
+    const char *info_full = JSON_FULL_STATUS;
     const char *shuffle_label = (props->shuffle ? TRUE_LABEL : FALSE_LABEL);
     char volume_label[5];
     snprintf(volume_label, 5, "%.2f", props->volume);
@@ -321,7 +314,7 @@ int main(int argc, char **argv)
         active_players = true;
         inactive_players = false;
     }
-    char *info_format = INFO_DEFAULT_STATUS;
+    char *info_format = "%track_name - %album_name - %artist_name";
     char *command = NULL;
     // select options
     if (optind < argc)
@@ -329,13 +322,13 @@ int main(int argc, char **argv)
         command = argv[optind];
         if (strncmp(command, CMD_LFMINFO, strlen(CMD_LFMINFO)) == 0 && argc > optind + 1)
         {
-            cnlog("Initializing last.fm");
+           fprintf(stdout, "%s\n\r", "Initializing Last.FM function.");
             char *LASTFMSECRET = getenv("LASTFMSECRET");
             char *LASTFMAPIKEY = getenv("LASTFMAPIKEY");
             if ((NULL == LASTFMAPIKEY) == 1 || (NULL == LASTFMSECRET) == 1)
             {
 
-                cnlog("Please set your LASTFMSECRET and LASTFMAPIKEY env variables first.");
+               fprintf(stdout, "%s\n\r","Please set your LASTFMSECRET and LASTFMAPIKEY env variables first.");
                 goto _exit;
             }
             else
@@ -448,20 +441,22 @@ int main(int argc, char **argv)
         {
 
             char *op = print_mpris_info_as_json(&player.properties, info_format);
-            cnlog(op);
+           fprintf(stdout, "%s\n\r", op);
         }
     }
     while (1)
     {
-        if (POLL_ALL_PLAYERS > 0)
-        {
-            for (int i = 0; i < found; i++)
+       
+        int playersfound_= (POLL_ALL_PLAYERS > 0) ? found : 0;
+        for (int i = 0; i <= playersfound_; i++)
             {
                 poll(i);
             }
-        }else{
-            poll(0);
-        }
+            
+      
+       
+        
+       
         sleep(1);
     }
 
